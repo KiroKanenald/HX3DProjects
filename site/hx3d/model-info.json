@@ -1,0 +1,8 @@
+{
+  "models/characters/cristal-wars-basisfigur.hx3d": {
+    "title": "Humanoid Base v1",
+    "category": "Charaktere",
+    "description": "Neutrale Low-Poly-Basisfigur mit getrennten Baugruppen für die Weiterentwicklung von RTS-Einheiten.",
+    "image": "previews/cristal-wars-basisfigur.png"
+  }
+}
