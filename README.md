@@ -1,66 +1,94 @@
-# Projektlabor · GitHub-Pages-Starter
+# Projektlabor 0.2 · HX3D Asset Workshop
 
-Eine bewusst kleine, deutschsprachige, statische Projektübersicht mit HX3D-8.1-Modellbibliothek. Planet Miner und Cristal Wars sind zunächst **nur Platzhalter**. Keine Spiele-Quellcodes oder privaten Entwicklungsdateien enthalten.
+Eine bewusst kleine, deutschsprachige und statische GitHub-Pages-Projektübersicht. **Die HX3D-Bibliothek erzeugt ab Version 0.2 bei jedem Build automatisch Modellvorschaubilder.** Für neue Modelle genügt es, eine freigegebene `.hx3d` in den Modellordner zu legen und zu pushen. Planet Miner und Cristal Wars bleiben **nur Platzhalter**; es wird kein Spiele-Entwicklungsquellcode veröffentlicht.
 
-## Inhalt
+## Was neu ist (0.2)
+
+- **Automatische PNG-Vorschaubilder** aus der tatsächlichen HX3D-Geometrie (640 × 440 Pixel, feste Studioansicht). Kein Screenshot, keine Vorschau-Uploads, kein Browser und kein GPU-Treiber für den Build erforderlich.
+- **HX3D 8.1:** Renderer berücksichtigt Parent-Transformationen, Gelenkstellung, Inline-Meshes, `mesh_library`/`mesh_ref`, `material_ref`, Base Color und Transparenz näherungsweise. Z-Puffer verhindert die meisten Verdeckungsfehler.
+- Katalog zeigt Dreiecke, Meshes, Materialien, Instanzen, HX3D-Version und Dateigröße.
+- **Optionale manuelle Vorschaubilder** bleiben per `model-info.json` möglich, falls du später ein bestimmtes Motiv willst.
+- GitHub Actions installiert die zwei benötigten **Build-Abhängigkeiten** (NumPy und Pillow), generiert Vorschaubilder und den Katalog, testet, veröffentlicht.
+- Im Repository liegt **nur das HX3D-Modell**. Die generierten Bilder landen ausschließlich in der öffentlichen Build-Ausgabe `_site/hx3d/previews/generated/`.
+
+## Struktur
 
 ```text
 site/
-  index.html                 Startseite
-  assets/style.css           Gemeinsames Layout
+  index.html
+  assets/style.css
   hx3d/
-    index.html               Öffentliche Modellbibliothek
-    viewer.html              Neutraler HX3D 8.1 Viewer (kein eingebettetes Modell)
-    gallery.js               Suche, Filter und Modelllinks
-    model-info.json          Optionale Titel, Beschreibungen, Vorschaubilder
-    models/characters/       Hier hinein kommen freigegebene .hx3d-Dateien
-    previews/                 Vorschaubilder
-  planet-miner/index.html    Platzhalter, noch kein Spielcode
-  cristal-wars/index.html    Platzhalter, noch kein Spielcode
-scripts/build_site.py        Validiert Modelle und erstellt catalog.json
-.github/workflows/pages.yml  Automatischer Build + GitHub-Pages-Deployment
-tests/test_build.py           Katalog- und Formatprüfungen
+    index.html                 Galerie
+    viewer.html               Neutraler HX3D-8.1-Betrachter
+    gallery.js                Katalog, Suche, Kategorien
+    model-info.json           Optionale Titel, Kategorien, Beschreibung, manuelle Bilder
+    models/
+      characters/
+        cristal-wars-basisfigur.hx3d
+    previews/                 Nur manuell gewählte Vorschaubilder, falls gewünscht
+  planet-miner/index.html     Platzhalter
+  cristal-wars/index.html     Platzhalter
+scripts/build_site.py        Kataloggenerator und Website-Kopie
+scripts/render_previews.py   Automatischer HX3D-Thumbnail-Renderer
+requirements-build.txt      NumPy und Pillow (nur für Build)
+tests/                      8 automatisierte Tests
+.github/workflows/pages.yml GitHub Pages Build + Deploy
 ```
 
-### Ein neues Modell hinzufügen
+## Neues Modell veröffentlichen
 
-1. Eine **zur Veröffentlichung freigegebene** `.hx3d` unter `site/hx3d/models/` in einen passenden Unterordner legen, z. B. `vehicles/` oder `characters/`.
-2. Optional einen Eintrag unter dem relativen Modellpfad in `site/hx3d/model-info.json` hinzufügen. `image` muss auf eine bestehende PNG-Datei innerhalb `site/hx3d/previews/` zeigen. Ohne Metadaten wird ein Titel aus dem Dateinamen gebildet.
-3. In `main` committen/pushen. GitHub Actions baut den gesamten Katalog bei jedem Push **neu**, validiert Dateien und veröffentlicht die Website.
+1. **Nur selbst erstellte oder ausdrücklich freigegebene** `.hx3d` in `site/hx3d/models/` ablegen. Beispielsweise `site/hx3d/models/vehicles/pm09-manta.hx3d`.
+2. Optional eintragen in `site/hx3d/model-info.json`:
 
-Dateien sind im Modellordner **öffentlich**. Keine Original-Game-Sources, API-Keys, privaten Dokumente oder ungeklärten Fremdassets hinzufügen. Der Build verwirft eine fehlerhafte HX3D-Datei und verhindert dadurch ein fehlerhaftes Deployment.
+   ```json
+   {
+     "models/vehicles/pm09-manta.hx3d": {
+       "title": "PM-09 MANTA",
+       "category": "Raumschiffe",
+       "description": "Leichtes Abbauschiff für Planet Miner."
+     }
+   }
+   ```
 
-### GitHub Pages veröffentlichen
+3. Dateien committen und auf Branch `main` pushen.
+4. GitHub Actions baut die Website automatisch. Das Bild landet im veröffentlichten Build unter `hx3d/previews/generated/vehicles/pm09-manta.png`, der Eintrag erscheint in der Galerie.
 
-1. Ein neues Repository auf GitHub anlegen, z. B. `projektlabor` (für GitHub Free: **öffentlich**).
-2. Den **Inhalt** dieses Starterordners in das Repository übernehmen. `main` als Standardbranch verwenden.
-3. Auf GitHub im Repository **Settings → Pages → Build and deployment → Source → GitHub Actions** wählen.
-4. Unter **Actions** den Workflow `Projektlabor auf GitHub Pages veröffentlichen` prüfen; bei Bedarf manuell per `Run workflow` starten. Die Actions-Umgebung benötigt Pages-Deployment-Berechtigung; für den Workflow wurden `pages: write` und `id-token: write` gesetzt.
-5. Nach erfolgreichem Deployment lautet die Adresse bei einem Projekt-Repository üblicherweise `https://BENUTZERNAME.github.io/projektlabor/` (Repo-Name beachten).
+**Hinweis:** Namen von Modellordnern und Dateien für die öffentliche Galerie nur aus ASCII-Buchstaben, Ziffern, `_`, `-`, `.` verwenden (keine Leerzeichen oder Umlaute). Metadaten dürfen selbstverständlich Umlaute enthalten. Bildgenerierung ist von Titeln/Metadaten unabhängig.
 
-**Achtung:** Ein öffentliches Repository und seine Dateien sind einsehbar. Auch bereitgestelltes JavaScript/WASM ist im Browser analysierbar; Minifizierung bietet keinen Schutz für Spielcode. Deshalb bleiben die Spielquellen privat und nur gesondert freigegebene Builds kommen später in dieses Repository.
+### Manuelles Bild als Ausnahme
 
-### Lokal testen
+Ein Modell kann im Metadateneintrag optional `"image": "previews/manual.png"` setzen. Das Bild muss zusätzlich unter `site/hx3d/previews/manual.png` liegen. Der Build erstellt **trotzdem** die automatisch berechnete Vorschau; angezeigt wird das manuell gewählte Bild. Ohne `image` erscheint immer die automatisch berechnete Vorschau.
 
-Python 3.10+ genügt, keine Pakete installieren:
+## GitHub Pages einrichten / aktualisieren
+
+- Den **Inhalt** dieses Starterordners in dein bestehendes öffentliches Projektlabor-Repository übernehmen (die bestehenden Dateien ersetzen/ergänzen, nicht den ZIP-Ordner als Unterordner hochladen).
+- Settings → Pages → Source: **GitHub Actions**.
+- Auf `main` pushen. Der Workflow testet, baut und veröffentlicht `_site`.
+- Falls GitHub Actions Berechtigungen zur Pages-Veröffentlichung fehlen, Repository-Einstellungen und Workflow-Berechtigungen prüfen.
+- Die Website funktioniert als Projektseite unter `https://BENUTZERNAME.github.io/REPOSITORY/` dank relativer Pfade.
+- Die Bilder selbst und alle `.hx3d` im Modellordner sind **öffentlich downloadbar**.
+
+## Lokal testen
+
+Python 3.10+; benötigt NumPy und Pillow zum Rendern der Vorschaubilder:
 
 ```sh
+python -m pip install -r requirements-build.txt
 python -m unittest discover -s tests -v
 python scripts/build_site.py
 python -m http.server 8000 --directory _site
 ```
 
-Dann `http://localhost:8000/` öffnen. **Nicht** `site/index.html` direkt doppelklicken: Die Galerie lädt `catalog.json` per HTTP und benötigt einen lokalen Webserver.
+Anschließend `http://localhost:8000/` öffnen. Der öffentliche Viewer ist auch ohne Modell über `hx3d/viewer.html` nutzbar. Die Galerie benötigt HTTP(S), nicht `file://`.
 
-Der ursprüngliche HX3D-Viewer bleibt zusätzlich ohne Webserver für **lokale Dateiimporte** nutzbar, wenn `viewer.html` direkt geöffnet wird. Modell-Direktlinks (`?model=models/...`) funktionieren dagegen nur per HTTP(S). Der Viewer lädt ausschließlich Modelle aus seinem eigenen öffentlichen `models/`-Verzeichnis.
+## Technische Grenzen
 
-### Technische Notizen
+- Statischer JSON-Katalog, **keine serverseitige Datenbank**. Der Build durchsucht beim Push den Modellordner und erstellt das Verzeichnis.
+- Thumbnail-Renderer ist eine eigenständige **Softwarevorschau** und kein pixelidentischer HexaForge-Renderer. Keine Texturen, PBR, Lichtquellen, Bones, Animationen oder komplexe glTF-Materialeffekte. Halbtransparenz wird angenähert.
+- Parent-Transformationsreihenfolge, Mesh-Instanzen, Materialzuordnung und sichtbare Gruppen werden berücksichtigt.
+- Der Build prüft HX3D-Grundstruktur und Referenzen; dies ersetzt nicht die vollständige Formatvalidierung in HexaForge.
+- Der Server kann nicht auf lokale Dateien anderer Nutzer zugreifen. Bei lokaler Dateiauswahl werden diese nur im Browser gerendert und **nicht hochgeladen**.
+- Statische Spiel-Demos könnten später freigegeben werden, aber Browser-JavaScript/WASM ist immer herunterladbar und analysierbar. Private Entwicklungs-Repositories gehören nicht in dieses öffentliche Repository.
+- GitHub Pages hat Ressourcenlimits; für sehr große Assetpakete gegebenenfalls später einen separaten Download-Host nutzen.
 
-- Die Modellbibliothek ist ein **statischer JSON-Katalog**, keine beschreibbare Datenbank. GitHub Pages bietet keine serverseitige Ordnerauflistung oder Schreibfunktion für Website-Besucher.
-- `catalog.json` wird im Build erstellt und **muss nicht** ins Repository eingecheckt werden.
-- Es werden nur `.hx3d`-Dateien automatisch aufgenommen. Dateien werden beim Build auf Grundstruktur, Version, referenzierte Meshes/Materialien und Tris-Zahlen geprüft; der Build ersetzt keinen vollständigen HexaForge-Konformitätstest.
-- Die Viewer-Datei ist weiterhin eine eigenständige HTML ohne externe JavaScript-Abhängigkeiten. Ein URL-Parameter kann ein Modell aus `models/` laden; ohne diesen Parameter beginnt sie leer.
-- `model-info.json` ist kein versteckter Speicher. Es ist eine öffentliche Metadatendatei.
-- Um später die Spiele zu veröffentlichen, sollten freigegebene und gebaute Web-Distributionen **separat** aus privaten Entwicklungs-Repositories in die entsprechenden Verzeichnisse kopiert werden. Keine Entwicklungs-Repositories in das öffentliche Projektlabor importieren.
-
-**Status:** Lokales Startpaket. Noch **nicht** mit deinem GitHub-Konto verbunden und **nicht** veröffentlicht.
+**Status:** Lokale Version 0.2, fertig zum Push in das bereits funktionierende GitHub-Pages-Repository. Nicht automatisch in dein GitHub-Repository hochgeladen.

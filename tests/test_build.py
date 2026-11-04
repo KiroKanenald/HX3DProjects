@@ -27,6 +27,7 @@ class ProjectLabTests(unittest.TestCase):
             model = cat['models'][0]
             self.assertEqual(model['triangles'], 3208)
             self.assertTrue((dst/'hx3d'/model['path']).exists())
+            self.assertEqual(model['image'], 'previews/generated/characters/cristal-wars-basisfigur.png')
             self.assertTrue((dst/'hx3d'/model['image']).exists())
             self.assertTrue((dst/'hx3d/viewer.html').exists())
             self.assertTrue((dst/'.nojekyll').exists())

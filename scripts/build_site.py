@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Builds a static GitHub Pages site and discovers public HX3D models.
-No external Python dependencies. Nothing is uploaded by this script.
+"""Build a GitHub Pages site with an HX3D catalog and auto-generated thumbnails.
+Requires NumPy + Pillow from requirements-build.txt; never uploads files by itself.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
+
+from render_previews import draw_thumbnail
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -58,6 +61,7 @@ def model_details(path: Path, mesh_size_limit: int = MAX_MODEL_BYTES) -> dict:
     triangles = 0
     meshes = 0
     instances = 0
+    material_usage = set()
     object_ids = set()
     for obj in objects:
         if not isinstance(obj, dict) or not isinstance(obj.get('id'), str) or obj['id'] in object_ids:
@@ -65,6 +69,10 @@ def model_details(path: Path, mesh_size_limit: int = MAX_MODEL_BYTES) -> dict:
         object_ids.add(obj['id'])
         if 'material_ref' in obj and obj['material_ref'] not in material_ids:
             raise ValueError(f'Unresolved material: {path} {obj["id"]}')
+        if obj.get('material_ref') is not None:
+            material_usage.add('ref:' + obj['material_ref'])
+        elif obj.get('material') is not None:
+            material_usage.add('inline:' + json.dumps(obj['material'], sort_keys=True))
         src = obj.get('source') or {}
         mesh = None
         if src.get('type') == 'instance':
@@ -79,6 +87,11 @@ def model_details(path: Path, mesh_size_limit: int = MAX_MODEL_BYTES) -> dict:
             continue
         if not isinstance(mesh, dict) or not isinstance(mesh.get('indices'), list) or len(mesh['indices']) % 3:
             raise ValueError(f'Invalid triangle index list: {path} {obj["id"]}')
+        positions = mesh.get('positions')
+        if not isinstance(positions, list) or len(positions) % 3 or not positions:
+            raise ValueError(f'Invalid vertex positions: {path} {obj["id"]}')
+        if any(not isinstance(i, int) or isinstance(i, bool) or i < 0 or i >= len(positions) // 3 for i in mesh['indices']):
+            raise ValueError(f'Invalid mesh indices: {path} {obj["id"]}')
         meshes += 1
         triangles += len(mesh['indices']) // 3
     version_str = f'{version}.{revision}' if version == 8 else str(version)
@@ -87,6 +100,8 @@ def model_details(path: Path, mesh_size_limit: int = MAX_MODEL_BYTES) -> dict:
         'objects': len(objects),
         'meshes': meshes,
         'instances': instances,
+        'mesh_resources': len(refs),
+        'materials': len(material_usage),
         'triangles': triangles,
         'size_bytes': path.stat().st_size,
     }
@@ -108,14 +123,23 @@ def build(source: Path = SITE, destination: Path = BUILD) -> dict:
         if not path.is_file() or path.suffix.lower() != '.hx3d':
             continue
         rel = path.relative_to(gallery).as_posix()
+        if not re.fullmatch(r'models/[A-Za-z0-9_./-]+\.hx3d', rel) or '..' in Path(rel).parts:
+            raise ValueError(f'Unsafe model path for viewer links: {rel}')
         details = model_details(path)
         info = meta.get(rel, {})
         if not isinstance(info, dict):
             raise ValueError(f'Invalid metadata entry: {rel}')
-        image = info.get('image')
+        # Always render the uploaded HX3D as part of this build. No PNG maintenance.
+        generated = 'previews/generated/' + path.relative_to(models).with_suffix('.png').as_posix()
+        preview_path = gallery / generated
+        model_data = json.loads(path.read_text(encoding='utf-8'))
+        draw_thumbnail(model_data, preview_path)
+        image = info.get('image')  # Optional manually art-directed override.
         if image is not None:
-            if not isinstance(image, str) or not image.startswith('previews/') or '..' in Path(image).parts or not (gallery/image).is_file():
+            if not isinstance(image, str) or not re.fullmatch(r'previews/[A-Za-z0-9_./-]+\.png', image) or '..' in Path(image).parts or not (gallery/image).is_file():
                 raise ValueError(f'Invalid preview image for {rel}: {image}')
+        else:
+            image = generated
         record = {
             'path': rel,
             'title': str(info.get('title') or path.stem.replace('-', ' ').replace('_', ' ')),

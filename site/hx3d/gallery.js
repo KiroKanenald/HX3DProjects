@@ -24,11 +24,12 @@
     if (typeof m.image === 'string' && /^previews\/[\w./-]+\.png$/i.test(m.image) && !m.image.includes('..')) {
       const img = node('img'); img.src = m.image; img.alt = `Vorschau ${m.title}`; img.loading = 'lazy';
       preview.append(img);
+      if (m.image.startsWith('previews/generated/')) preview.append(node('span','preview-label','Automatische 3D-Vorschau'));
     } else {preview.append(node('span','placeholder','◇'));}
     card.append(preview);
     const details = node('div','details');
     details.append(node('span','tag',m.category),node('h3','',m.title),node('p','',m.description));
-    details.append(node('div','meta',`${fmt(m.triangles)} Dreiecke · HX3D ${m.version} · ${bytes(m.size_bytes)}`));
+    details.append(node('div','meta',`${fmt(m.triangles)} Dreiecke · ${fmt(m.meshes ?? 0)} Meshes · ${fmt(m.materials ?? 0)} Materialien · ${fmt(m.instances ?? 0)} Instanzen · HX3D ${m.version} · ${bytes(m.size_bytes)}`));
     const tools = node('div','tools');
     const view = node('a','button tiny','3D ansehen ↗');
     view.href = `viewer.html?${new URLSearchParams({model:m.path})}`;
