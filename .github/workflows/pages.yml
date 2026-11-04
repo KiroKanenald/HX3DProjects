@@ -1,0 +1,48 @@
+name: Projektlabor auf GitHub Pages veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository laden
+        uses: actions/checkout@v4
+      - name: Python vorbereiten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tests ausführen
+        run: python -m unittest discover -s tests -v
+      - name: Statische Website und HX3D-Katalog erzeugen
+        run: python scripts/build_site.py
+      - name: GitHub Pages konfigurieren
+        uses: actions/configure-pages@v5
+      - name: Website hochladen
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: GitHub Pages aktualisieren
+        id: deployment
+        uses: actions/deploy-pages@v4
